@@ -59,11 +59,19 @@ stdenv.mkDerivation (finalAttrs: {
   noDumpEnvVars = true;
 
   # libpcap.so.0.8 is Debian-specific versioning; nixpkgs ships libpcap.so.1
-  # warp-dex (diagnostic tool) links against it, but warp-cli and warp-svc work fine
+  # Let autoPatchelfHook skip it, then fix it manually in postFixup
   autoPatchelfIgnoreMissingDeps = [ "libpcap.so.0.8" ];
 
   unpackPhase = ''
     dpkg-deb -x $src .
+  '';
+
+  # Create a compat symlink for the Debian-specific libpcap.so.0.8
+  # and add it to warp-dex's RPATH after autoPatchelfHook has finished
+  postFixup = ''
+    mkdir -p $out/lib
+    ln -sf ${libpcap.lib}/lib/libpcap.so $out/lib/libpcap.so.0.8
+    patchelf --add-rpath $out/lib $out/bin/warp-dex
   '';
 
   installPhase = ''
