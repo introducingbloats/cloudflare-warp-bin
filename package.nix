@@ -81,6 +81,33 @@ stdenv.mkDerivation (finalAttrs: {
     cp -r usr/lib/* $out/lib/ || true
     # Also install the main binaries from /bin if present
     cp -r bin/* $out/bin/ 2>/dev/null || true
+
+    # Install shell completions if bundled in the deb
+    if [ -d usr/share/bash-completion ]; then
+      mkdir -p $out/share/bash-completion
+      cp -r usr/share/bash-completion/* $out/share/bash-completion/
+    fi
+    if [ -d usr/share/zsh ]; then
+      mkdir -p $out/share/zsh
+      cp -r usr/share/zsh/* $out/share/zsh/
+    fi
+    if [ -d usr/share/fish ]; then
+      mkdir -p $out/share/fish
+      cp -r usr/share/fish/* $out/share/fish/
+    fi
+
+    # Install desktop file if present
+    if [ -d usr/share/applications ]; then
+      mkdir -p $out/share/applications
+      cp -r usr/share/applications/* $out/share/applications/
+    fi
+
+    # Install icons if present
+    if [ -d usr/share/icons ]; then
+      mkdir -p $out/share/icons
+      cp -r usr/share/icons/* $out/share/icons/
+    fi
+
     runHook postInstall
   '';
 
