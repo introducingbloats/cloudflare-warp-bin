@@ -1,6 +1,5 @@
 {
   lib,
-  nix-prefetch-scripts,
   writeShellApplication,
   jq,
   coreutils,
@@ -13,7 +12,6 @@ writeShellApplication {
   name = "cloudflare-warp-bin-update";
   runtimeInputs = [
     jq
-    nix-prefetch-scripts
     coreutils
     curl
   ];
@@ -39,13 +37,11 @@ writeShellApplication {
     ARM64_FILENAME=$(echo "$ARM64_META" | grep -m1 "^Filename:" | awk '{print $2}')
 
     echo "Fetching x86_64-linux deb and calculating hash"
-    X64_SHA256=$(nix-prefetch-url "${constants.apt_repo}/$AMD64_FILENAME")
-    X64_HASH=$(nix-hash --to-sri --type sha256 "$X64_SHA256")
+    X64_HASH=$(nix store prefetch-file --json "${constants.apt_repo}/$AMD64_FILENAME" | jq -r '.hash')
     echo "x86_64-linux hash: $X64_HASH"
 
     echo "Fetching aarch64-linux deb and calculating hash"
-    ARM64_SHA256=$(nix-prefetch-url "${constants.apt_repo}/$ARM64_FILENAME")
-    ARM64_HASH=$(nix-hash --to-sri --type sha256 "$ARM64_SHA256")
+    ARM64_HASH=$(nix store prefetch-file --json "${constants.apt_repo}/$ARM64_FILENAME" | jq -r '.hash')
     echo "aarch64-linux hash: $ARM64_HASH"
 
     jq --arg version "$VERSION" \
