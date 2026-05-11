@@ -6,11 +6,20 @@
   dpkg,
 
   dbus,
+  curl,
   libcap,
   nss,
   libpcap,
   glib,
   gtk3,
+  libayatana-appindicator,
+  libayatana-indicator,
+  ayatana-ido,
+  libdbusmenu,
+  webkitgtk_4_1,
+  libsoup_3,
+  openjdk17,
+  cliOnly ? true,
 }:
 let
   currentVersion = lib.importJSON ./version.json;
@@ -34,6 +43,19 @@ let
     }
     .${stdenv.hostPlatform.system}
       or (throw "cloudflare-warp-bin: Unsupported platform: ${stdenv.hostPlatform.system}");
+  terminalMissing = [
+    "libpcap.so.0.8"
+    "libayatana-appindicator3.so.1"
+    "libayatana-indicator3.so.7"
+    "libayatana-ido3-0.4.so.0"
+    "libdbusmenu-glib.so.4"
+    "libwebkit2gtk-4.1.so.0"
+    "libsoup-3.0.so.0"
+    "libjavascriptcoregtk-4.1.so.0"
+    "libjvm.so"
+    "libcurl.so.4"
+  ];
+  fullMissing = [ "libpcap.so.0.8" ];
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "cloudflare-warp-bin";
@@ -52,6 +74,15 @@ stdenv.mkDerivation (finalAttrs: {
     libpcap
     glib
     gtk3
+  ] ++ lib.optionals (!cliOnly) [
+    curl
+    libayatana-appindicator
+    libayatana-indicator
+    ayatana-ido
+    libdbusmenu
+    webkitgtk_4_1
+    libsoup_3
+    openjdk17
   ];
 
   dontBuild = true;
@@ -59,8 +90,10 @@ stdenv.mkDerivation (finalAttrs: {
   noDumpEnvVars = true;
 
   # libpcap.so.0.8 is Debian-specific versioning; nixpkgs ships libpcap.so.1
-  # Let autoPatchelfHook skip it, then fix it manually in postFixup
-  autoPatchelfIgnoreMissingDeps = [ "libpcap.so.0.8" ];
+  # Keep terminal-only builds lightweight by ignoring non-essential optional runtime deps.
+  # Full mode keeps complete runtime dependencies for GUI/plugin features.
+  autoPatchelfIgnoreMissingDeps = if cliOnly then terminalMissing else fullMissing;
+  autoPatchelfLibs = if (!cliOnly) then [ "${openjdk17}/lib/openjdk/lib/server" ] else [ ];
 
   unpackPhase = ''
     dpkg-deb -x $src .
