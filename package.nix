@@ -15,6 +15,7 @@
   libayatana-appindicator,
   libayatana-indicator,
   ayatana-ido,
+  tpm2-tss,
   libdbusmenu,
   webkitgtk_4_1,
   libsoup_3,
@@ -71,6 +72,7 @@ stdenv.mkDerivation (finalAttrs: {
     dbus
     libcap
     nss
+    tpm2-tss
     libpcap
     glib
     gtk3
@@ -110,10 +112,16 @@ stdenv.mkDerivation (finalAttrs: {
   installPhase = ''
     runHook preInstall
     mkdir -p $out/bin $out/lib
-    cp -r usr/bin/* $out/bin/ || true
-    cp -r usr/lib/* $out/lib/ || true
+    if [ -d usr/bin ]; then
+      cp -r usr/bin/. $out/bin/
+    fi
+    if [ -d usr/lib ]; then
+      cp -r usr/lib/. $out/lib/
+    fi
     # Also install the main binaries from /bin if present
-    cp -r bin/* $out/bin/ 2>/dev/null || true
+    if [ -d bin ]; then
+      cp -r bin/. $out/bin/
+    fi
 
     # Install shell completions if bundled in the deb
     if [ -d usr/share/bash-completion ]; then
